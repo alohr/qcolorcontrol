@@ -16,7 +16,6 @@ Grab qextserialport:
 
 ```
 git clone https://code.google.com/p/qextserialport/ 3rd/qextserialport
-
 ```
 
 ## Build

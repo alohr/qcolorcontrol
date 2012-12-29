@@ -1,15 +1,31 @@
 #include <QDataStream>
-#include <QDir>
-
-#include <qextserialport.h>
-
-using namespace std;
+#include <QList>
+#include <QDebug>
 
 #include "colorcontrol.h"
 
-static QextSerialPort *newSerialPort(const QString& name)
+ColorControl::ColorControl(QWidget *parent) : QColorDialog(parent)
 {
-    QextSerialPort *port = new QextSerialPort(name, QextSerialPort::Polling);
+    setOption(QColorDialog::NoButtons);
+    setModal(true);
+
+    portEnumerator_ = new QextSerialEnumerator();
+    portEnumerator_->setUpNotifications();
+
+    connect(portEnumerator_, SIGNAL(deviceDiscovered(const QextPortInfo &)),
+	    this, SLOT(onDeviceDiscovered(const QextPortInfo &)));
+    connect(portEnumerator_, SIGNAL(deviceRemoved(const QextPortInfo &)),
+	    this, SLOT(onDeviceRemoved(const QextPortInfo &)));
+
+    port_ = newSerialPort(defaultDevice());
+
+    connect(this, SIGNAL(currentColorChanged(QColor)),
+	    this, SLOT(onCurrentColorChanged(QColor)));
+}
+
+QextSerialPort *ColorControl::newSerialPort(const QString& device)
+{
+    QextSerialPort *port = new QextSerialPort(device, QextSerialPort::Polling);
 
     port->setBaudRate(BAUD115200);
     port->setFlowControl(FLOW_OFF);
@@ -18,32 +34,29 @@ static QextSerialPort *newSerialPort(const QString& name)
     port->setStopBits(STOP_1);
     port->setTimeout(500);
 
-    return port;
-}
-    
-ColorControl::ColorControl(QWidget *parent) : QColorDialog(parent)
-{
-    setOption(QColorDialog::NoButtons);
-    setModal(true);
-
-    connect(this, SIGNAL(currentColorChanged(QColor)),
-	    this, SLOT(onCurrentColorChanged(QColor))); 
-
-    QString device(defaultDevice());
-
-    port_ = newSerialPort(device);
     setWindowTitle(device);
+    qDebug("window %s", device.toAscii().constData());
+
+    return port;
 }
 
 QString ColorControl::defaultDevice()
 {
+#ifdef Q_OS_WIN
+    static const QString nullDevice("NUL");
+#else
     static const QString nullDevice("/dev/null");
+#endif
 
-    QDir dir("/dev");
-    QStringList filter("tty.usbmodem*");
-    QStringList devices = dir.entryList(filter, QDir::System);
+    QList<QextPortInfo> ports = QextSerialEnumerator::getPorts();
+    QList<QextPortInfo>::const_iterator i = ports.begin();
+    while (i != ports.end()) {
+	if (i->friendName.contains("Arduino", Qt::CaseInsensitive))
+	    return i->portName;
+	++i;
+    }
 
-    return devices.empty() ? nullDevice : devices[0];
+    return nullDevice;
 }
 
 bool ColorControl::openPort()
@@ -72,3 +85,30 @@ void ColorControl::onCurrentColorChanged(const QColor& color)
 
     sendToPort(color);
 }
+
+void ColorControl::onDeviceDiscovered(const QextPortInfo& discovered)
+{
+    qDebug("onDeviceDiscovered: '%s' '%s'",
+	   discovered.portName.toAscii().constData(),
+	   discovered.friendName.toAscii().constData());
+
+    if (discovered.friendName.contains("Arduino", Qt::CaseInsensitive)) {
+	port_->close();
+	delete port_;
+	port_ = newSerialPort(discovered.portName);
+    }
+}
+
+void ColorControl::onDeviceRemoved(const QextPortInfo& removed)
+{
+    qDebug("onDeviceRemoved: removed='%s' current='%s'",
+	   removed.portName.toAscii().constData(),
+	   port_->portName().toAscii().constData());
+
+    if (removed.portName.compare(port_->portName()) == 0) {
+	port_->close();
+	delete port_;
+	port_ = newSerialPort(defaultDevice());
+    }
+}
+

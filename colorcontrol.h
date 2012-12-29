@@ -1,10 +1,7 @@
 #include <QColorDialog>
 
-#include <iostream>
-
-using namespace std;
-
-class QextSerialPort;
+#include <qextserialenumerator.h>
+#include <qextserialport.h>
 
 class ColorControl : public QColorDialog
 {
@@ -15,10 +12,14 @@ public:
 
 private slots:
     void onCurrentColorChanged(const QColor& color); 
+    void onDeviceDiscovered(const QextPortInfo& portInfo);
+    void onDeviceRemoved(const QextPortInfo& portInfo);
 
 private:
     QextSerialPort *port_;
+    QextSerialEnumerator *portEnumerator_;
 
+    QextSerialPort *newSerialPort(const QString& device);
     QString defaultDevice();
 
     bool openPort();
