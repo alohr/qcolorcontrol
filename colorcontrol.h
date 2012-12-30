@@ -20,7 +20,7 @@ private:
     QextSerialEnumerator *portEnumerator_;
 
     QextSerialPort *newSerialPort(const QString& device);
-    QString defaultDevice();
+    QString arduinoDevice();
 
     bool openPort();
     void sendToPort(const QColor& color);
