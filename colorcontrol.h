@@ -12,14 +12,16 @@ public:
 
 private slots:
     void onCurrentColorChanged(const QColor& color); 
-    void onDeviceDiscovered(const QextPortInfo& portInfo);
-    void onDeviceRemoved(const QextPortInfo& portInfo);
+    void onDeviceDiscovered(const QextPortInfo&);
+    void onDeviceRemoved(const QextPortInfo& removed);
 
 private:
     QextSerialPort *port_;
     QextSerialEnumerator *portEnumerator_;
 
     QextSerialPort *newSerialPort(const QString& device);
+    void closeSerialPort(QextSerialPort *port);
+
     QString arduinoDevice();
 
     bool openPort();

@@ -4,12 +4,15 @@
 
 #include "colorcontrol.h"
 
-static const int ARDUINO_VENDOR_ID = 9025;
+static const int ARDUINO_USB_VENDOR_ID = 9025;
+
 
 ColorControl::ColorControl(QWidget *parent) : QColorDialog(parent)
 {
     setOption(QColorDialog::NoButtons);
-    setModal(true);
+#ifdef DONT_USE_NATIVE_DIALOG
+    setOption(QColorDialog::DontUseNativeDialog);
+#endif
 
     portEnumerator_ = new QextSerialEnumerator();
     portEnumerator_->setUpNotifications();
@@ -37,9 +40,16 @@ QextSerialPort *ColorControl::newSerialPort(const QString& device)
     port->setTimeout(500);
 
     setWindowTitle("Arduino Port " + device);
-    qDebug("window %s", device.toAscii().constData());
 
     return port;
+}
+
+void ColorControl::closeSerialPort(QextSerialPort *port)
+{
+    if (port) {
+	port->close();
+	delete port;
+    }
 }
 
 QString ColorControl::arduinoDevice()
@@ -53,15 +63,16 @@ QString ColorControl::arduinoDevice()
     QList<QextPortInfo> ports = QextSerialEnumerator::getPorts();
     QList<QextPortInfo>::const_iterator i = ports.begin();
     while (i != ports.end()) {
-		qDebug("device: port=%s friendly=%s vendor=%d product=%d",
-			i->portName.toAscii().constData(),
-			i->friendName.toAscii().constData(),
-			i->vendorID,
-			i->productID);
-		if (i->vendorID == ARDUINO_VENDOR_ID ||
-		    i->friendName.contains("Arduino", Qt::CaseInsensitive))
-			return i->portName;
-		++i;
+	qDebug("device: port=%s friendly=%s vendor=%d product=%d",
+	       i->portName.toAscii().constData(),
+	       i->friendName.toAscii().constData(),
+	       i->vendorID,
+	       i->productID);
+	if (i->portName.length() > 0 &&
+	    (i->vendorID == ARDUINO_USB_VENDOR_ID ||
+	     i->friendName.contains("Arduino", Qt::CaseInsensitive)))
+	    return i->portName;
+	++i;
     }
 
     return nullDevice;
@@ -94,33 +105,19 @@ void ColorControl::onCurrentColorChanged(const QColor& color)
     sendToPort(color);
 }
 
-void ColorControl::onDeviceDiscovered(const QextPortInfo& discovered)
+void ColorControl::onDeviceDiscovered(const QextPortInfo&)
 {
-    qDebug("onDeviceDiscovered: '%s' '%s' vendor=%d product=%d",
-	   discovered.portName.toAscii().constData(),
-	   discovered.friendName.toAscii().constData(),
-       discovered.vendorID,
-       discovered.productID);
-
-    QString port = arduinoDevice();
-    if (port.compare(port_->portName()) != 0) {
-    	port_->close();
-	    delete port_;
-	    port_ = newSerialPort(port);
+    QString device = arduinoDevice();
+    if (device.compare(port_->portName()) != 0) {
+	closeSerialPort(port_);
+	port_ = newSerialPort(device);
     }
 }
 
 void ColorControl::onDeviceRemoved(const QextPortInfo& removed)
 {
-    qDebug("onDeviceRemoved: removed='%s' current='%s' vendor=%d product=%d",
-	   removed.portName.toAscii().constData(),
-	   port_->portName().toAscii().constData(),
-       removed.vendorID,
-       removed.productID);
-
     if (removed.portName.compare(port_->portName()) == 0) {
-	port_->close();
-	delete port_;
+	closeSerialPort(port_);
 	port_ = newSerialPort(arduinoDevice());
     }
 }
