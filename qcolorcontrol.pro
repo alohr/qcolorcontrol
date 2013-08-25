@@ -7,4 +7,8 @@ win32 {
     CONFIG += static
 }
 
+linux* {
+    CONFIG += qesp_linux_udev
+}
+
 include(3rd/qextserialport/src/qextserialport.pri)
