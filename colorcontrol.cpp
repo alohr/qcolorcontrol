@@ -64,8 +64,8 @@ QString ColorControl::arduinoDevice()
     QList<QextPortInfo>::const_iterator i = ports.begin();
     while (i != ports.end()) {
 	qDebug("device: port=%s friendly=%s vendor=%d product=%d",
-	       i->portName.toAscii().constData(),
-	       i->friendName.toAscii().constData(),
+	       i->portName.toLatin1().constData(),
+	       i->friendName.toLatin1().constData(),
 	       i->vendorID,
 	       i->productID);
 	if (i->portName.length() > 0 &&
@@ -89,9 +89,9 @@ bool ColorControl::openPort()
 void ColorControl::sendToPort(const QColor& color)
 {
     QString colorName = color.name();
-    qDebug("%s", colorName.toAscii().constData());
+    qDebug("%s", colorName.toLatin1().constData());
 
-    int n = port_->write(colorName.toAscii(),
+    int n = port_->write(colorName.toLatin1(),
 			 colorName.length());
     if (n < 0)
 	port_->close();
