@@ -14,12 +14,11 @@ ColorControl::ColorControl(QWidget *parent) : QColorDialog(parent)
     setOption(QColorDialog::DontUseNativeDialog);
 #endif
 
-    portEnumerator_ = new QextSerialEnumerator();
-    portEnumerator_->setUpNotifications();
+    portEnumerator_.setUpNotifications();
 
-    connect(portEnumerator_, SIGNAL(deviceDiscovered(const QextPortInfo &)),
+    connect(&portEnumerator_, SIGNAL(deviceDiscovered(const QextPortInfo &)),
 	    this, SLOT(onDeviceDiscovered(const QextPortInfo &)));
-    connect(portEnumerator_, SIGNAL(deviceRemoved(const QextPortInfo &)),
+    connect(&portEnumerator_, SIGNAL(deviceRemoved(const QextPortInfo &)),
 	    this, SLOT(onDeviceRemoved(const QextPortInfo &)));
 
     port_ = newSerialPort(arduinoDevice());

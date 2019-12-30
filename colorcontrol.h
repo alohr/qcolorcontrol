@@ -16,8 +16,8 @@ private slots:
     void onDeviceRemoved(const QextPortInfo& removed);
 
 private:
+    QextSerialEnumerator portEnumerator_;
     QextSerialPort *port_;
-    QextSerialEnumerator *portEnumerator_;
 
     QextSerialPort *newSerialPort(const QString& device);
     void closeSerialPort(QextSerialPort *port);
