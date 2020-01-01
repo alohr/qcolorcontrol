@@ -1,13 +1,13 @@
 #include <QApplication>
 
-#include "colorcontrol.h"
- 
+#include "mainwindow.h"
+
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
-    ColorControl colorControl;
-    colorControl.show();
+    MainWindow mainWindow;
+    mainWindow.show();
 
     return app.exec();
 }

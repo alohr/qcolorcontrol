@@ -11,7 +11,7 @@ public:
     ColorControl(QWidget *parent = 0);
 
 private slots:
-    void onCurrentColorChanged(const QColor& color); 
+    void onCurrentColorChanged(const QColor& color);
     void onDeviceDiscovered(const QextPortInfo&);
     void onDeviceRemoved(const QextPortInfo& removed);
 
@@ -27,4 +27,3 @@ private:
     bool openPort();
     void sendToPort(const QColor& color);
 };
-
